@@ -13,12 +13,20 @@
     <script>
 
     $(document).ready(function() {
-
         $('#calendar').fullCalendar({
+            customButtons: {
+                refreshButton: {
+                    text: 'Refresh Month',
+                    click: function() {
+                        $('#calendar').fullCalendar('removeEvents');
+                        $('#calendar').fullCalendar( 'refetchEvents' )
+                    }
+                }
+            },
             header: {
                 left: 'prev,next today',
                 center: 'title',
-                right: ''
+                right: 'refreshButton'
             },
             defaultDate: '2017-07-01',
             eventLimit: true, // allow "more" link when too many events
@@ -36,8 +44,12 @@
                 console.log('Coordinates: ' + jsEvent.pageX + ',' + jsEvent.pageY);
                 console.log('View: ' + view.name);
 
-                $.get("data", { 'selection' : calEvent.start._i });
-
+                $.get( "data", { 'selection' : calEvent.start._i }, function(data) {
+                    events = JSON.parse(data)
+                    $('#calendar').fullCalendar('removeEvents');
+                    $('#calendar').fullCalendar('addEventSource', events);
+                    $('#calendar').fullCalendar('rerenderEvents' );
+                });
             },  
             loading: function(bool) {
                 $('#loading').toggle(bool);
@@ -92,7 +104,6 @@
         </div>
 
         <div id='loading'>loading...</div>
-
         <div id='calendar'></div>
 
     </body>

@@ -15,6 +15,8 @@ app.config['MYSQL_DATABASE_PASSWORD'] = 'toor'
 app.config['MYSQL_DATABASE_DB'] = 'hopper'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 
+START = '2017-07-01'
+
 
 mysql.init_app(app)
 conn = mysql.connect()
@@ -76,7 +78,6 @@ def return_data():
     start_date = request.args.get('start', '')
     end_date = request.args.get('end', '')
     selected_date = request.args.get('selection', '')
-    embed()
     if selected_date:
         getReturning(selected_date)
     else:
