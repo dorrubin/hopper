@@ -15,15 +15,14 @@ app.config['MYSQL_DATABASE_PASSWORD'] = 'toor'
 app.config['MYSQL_DATABASE_DB'] = 'hopper'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 
-START = '2017-07-01'
-
-
 mysql.init_app(app)
 conn = mysql.connect()
-# cursor = conn.cursor()
 
 
-def updateJSON(rows):
+def updateJSON(rows, start_date):
+    """ Re-write the json file
+    Update the events.json file with the flights that matched the query
+    """
     objects_list = []
     for row in rows:
         d = {}
@@ -38,11 +37,20 @@ def updateJSON(rows):
             color = "red"
         d['color'] = color
         objects_list.append(d)
+    if start_date:
+        d = {}
+        d['title'] = 'SELECTED DATE'
+        d['start'] = start_date
+        d['color'] = "blue"
+        objects_list.append(d)
     with open('events.json', 'w') as fp:
         json.dump(objects_list, fp)
 
 
 def getDeparting(start_date, end_date):
+    """ Get the data for all flight departing within range
+    For each departure time within range, select the minimum for each day
+    """
     cursor = conn.cursor()
     query = """SELECT departure_odate, MIN(total_usd)
                 FROM flights
@@ -52,10 +60,14 @@ def getDeparting(start_date, end_date):
              """.format(start_date, end_date)
     cursor.execute(query)
     data = cursor.fetchall()
-    updateJSON(data)
+    updateJSON(data, '')
 
 
 def getReturning(start_date):
+    """ Get the data for all flight returning given departure date
+    For each flight with a departure time equal to the one selected,
+    Return the minimum cost for each day
+    """
     cursor = conn.cursor()
     query = """SELECT return_odate, MIN(total_usd)
                 FROM flights
@@ -65,16 +77,20 @@ def getReturning(start_date):
              """.format(start_date)
     cursor.execute(query)
     data = cursor.fetchall()
-    updateJSON(data)
+    updateJSON(data, start_date)
 
 
 @app.route('/')
 def calendar():
+    """ Render index.html
+    """
     return render_template("index.html")
 
 
 @app.route('/data')
 def return_data():
+    """ GET Route for populating the calendar
+    """
     start_date = request.args.get('start', '')
     end_date = request.args.get('end', '')
     selected_date = request.args.get('selection', '')
@@ -82,16 +98,8 @@ def return_data():
         getReturning(selected_date)
     else:
         getDeparting(start_date, end_date)
-
-    # You'd normally use the variables above to limit the data returned
-    # you don't want to return ALL events like in this code
-    # but since no db or any real storage is implemented I'm just
-    # returning data from a text file that contains json elements
-
+    # pass the new events.json file to the frontend
     with open("events.json", "r") as input_data:
-        # you should use something else here than just plaintext
-        # check out jsonfiy method or the built in json module
-        # http://flask.pocoo.org/docs/0.10/api/#module-flask.json
         return input_data.read()
 
 
